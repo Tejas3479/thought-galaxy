@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useThoughtStore } from '@/store/thoughtStore';
+import { detectSentiment, sentimentTypeToEmoji } from '@/utils/sentiment';
 
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of',
@@ -26,7 +27,7 @@ type Sentiment = 'happy' | 'neutral' | 'sad' | null;
 
 export default function ThoughtInput() {
   const [text, setText] = useState('');
-  const [sentiment, setSentiment] = useState<Sentiment>(null);
+  const [manualSentiment, setManualSentiment] = useState<Sentiment>(null);
   const addThought = useThoughtStore((state) => state.addThought);
 
   const handleSubmit = () => {
@@ -34,18 +35,29 @@ export default function ThoughtInput() {
     if (!trimmed) return;
 
     const keywords = extractKeywords(trimmed);
+    
+    // Determine sentiment: manual selection takes precedence, otherwise auto-detect
+    let finalSentiment: 'happy' | 'neutral' | 'sad';
+    if (manualSentiment) {
+      finalSentiment = manualSentiment;
+    } else {
+      const detectedType = detectSentiment(trimmed);
+      finalSentiment = sentimentTypeToEmoji(detectedType);
+    }
+
     addThought({
       text: trimmed,
-      sentiment: sentiment || 'auto',
+      sentiment: finalSentiment,
       keywords,
     });
 
     setText('');
-    setSentiment(null);
+    setManualSentiment(null);
     console.log('Thought added:', {
       text: trimmed,
-      sentiment: sentiment || 'auto',
+      sentiment: finalSentiment,
       keywords,
+      manualOverride: manualSentiment !== null,
     });
   };
 
@@ -67,38 +79,46 @@ export default function ThoughtInput() {
           rows={3}
         />
 
-        {/* Sentiment Selection */}
+        {/* Sentiment Selection - Optional Manual Override */}
         <div className="flex gap-2 mt-4 mb-4">
           <button
-            onClick={() => setSentiment(sentiment === 'happy' ? null : 'happy')}
+            onClick={() => setManualSentiment(manualSentiment === 'happy' ? null : 'happy')}
             className={`text-2xl px-3 py-1 rounded-lg transition-all ${
-              sentiment === 'happy'
+              manualSentiment === 'happy'
                 ? 'bg-white/20 scale-110'
                 : 'bg-white/5 hover:bg-white/10'
             }`}
+            title="Override auto-detect: Happy"
           >
             😊
           </button>
           <button
-            onClick={() => setSentiment(sentiment === 'neutral' ? null : 'neutral')}
+            onClick={() => setManualSentiment(manualSentiment === 'neutral' ? null : 'neutral')}
             className={`text-2xl px-3 py-1 rounded-lg transition-all ${
-              sentiment === 'neutral'
+              manualSentiment === 'neutral'
                 ? 'bg-white/20 scale-110'
                 : 'bg-white/5 hover:bg-white/10'
             }`}
+            title="Override auto-detect: Neutral"
           >
             😐
           </button>
           <button
-            onClick={() => setSentiment(sentiment === 'sad' ? null : 'sad')}
+            onClick={() => setManualSentiment(manualSentiment === 'sad' ? null : 'sad')}
             className={`text-2xl px-3 py-1 rounded-lg transition-all ${
-              sentiment === 'sad'
+              manualSentiment === 'sad'
                 ? 'bg-white/20 scale-110'
                 : 'bg-white/5 hover:bg-white/10'
             }`}
+            title="Override auto-detect: Sad"
           >
             😔
           </button>
+          {!manualSentiment && text.trim() && (
+            <div className="ml-auto text-xs text-white/50 py-1 px-2">
+              Auto-detecting sentiment...
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

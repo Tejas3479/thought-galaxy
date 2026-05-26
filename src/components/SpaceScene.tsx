@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, Clouds } from '@react-three/drei';
 import { useRef } from 'react';
 import * as THREE from 'three';
+import ThoughtStars from './ThoughtStars';
 
 function CameraController() {
   const cameraGroupRef = useRef<THREE.Group>(null);
@@ -32,6 +33,7 @@ export default function SpaceScene() {
       <ambientLight intensity={0.2} />
       <pointLight position={[0, 0, 0]} intensity={0.5} />
       <CameraController />
+      <ThoughtStars />
     </Canvas>
   );
 }
